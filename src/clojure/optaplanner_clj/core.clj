@@ -40,7 +40,7 @@
         problemId (UUID/randomUUID)
         solution (.getFinalBestSolution
                   (.solve sm problemId problem))]
-    
+
     (list (map #(vector (.getId %)
                         ;; (.getSubject %)
                         ;; (.getTeacher %)
