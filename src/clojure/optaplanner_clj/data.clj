@@ -3,7 +3,17 @@
            [org.optaplanner.core.api.score.stream
             Constraint ConstraintProvider ConstraintFactory
             Joiners]
-           [java.time DayOfWeek LocalTime]))
+           [org.optaplanner.core.api.domain.solution PlanningSolution]
+           [org.optaplanner.core.api.domain.variable PlanningVariable]
+           [org.optaplanner.core.api.domain.entity PlanningEntity]
+           [org.optaplanner.core.api.domain.lookup PlanningId]
+           [org.optaplanner.core.api.domain.solution PlanningEntityCollectionProperty]
+           [org.optaplanner.core.api.domain.solution PlanningScore]
+           [org.optaplanner.core.api.domain.solution PlanningSolution]
+           [org.optaplanner.core.api.domain.solution ProblemFactCollectionProperty]
+           [org.optaplanner.core.api.domain.valuerange ValueRangeProvider]
+           [java.time DayOfWeek LocalTime]
+           [java.util List]))
 
 (definterface INamed
   (^String getName []))
@@ -12,7 +22,7 @@
   Object
   (toString [this] (str dayOfWeek " " startTime)))
 
-(defn ->TimeSlot [day starttime endtime]
+(defn ->time-slot [day starttime endtime]
   (TimeSlot. day starttime endtime))
 
 
@@ -22,7 +32,7 @@
   Object
   (toString [this] name))
 
-(defn ->Room [x] (Room. (str x)))
+(defn ->room [x] (Room. (str x)))
 
 (definterface ILesson
   (getId [])
@@ -59,41 +69,41 @@
   Object
   (toString [this] (str id)))
 
-(defn ->Lesson [id course teacher student]
+(defn ->lesson [id course teacher student]
   (Lesson. id course teacher student nil nil))
 
 
+;; The solutionClass (class optaplanner_clj.data.TimeTable) has a
+;; PlanningEntityCollectionProperty annotated member (public final java.lang.Object
+;; optaplanner_clj.data.TimeTable.lessonList) that does not return a Collection or
+;; an array.
+
 ;; Timetable
 (definterface ITimeTable
-  (getTimeslotList [])
-  (getRoomList [])
-  (getLessonList [])
-  (getScore []))
+  (getTimeslotList ^List [])
+  (getRoomList ^List [])
+  (getLessonList ^List [])
+  (getScore ^HardSoftScore []))
 
 
 (deftype ^{PlanningSolution true} TimeTable
     [^{ProblemFactCollectionProperty true
-       ValueRangeProvider "timeslotRange"
-       :tag 'List} timeslotList
+       ValueRangeProvider "timeslotRange"}  ^List timeslotList
 
      ^{ProblemFactCollectionProperty true
-       ValueRangeProvider "roomRange"
-       :tag 'List}  roomList
+       ValueRangeProvider "roomRange"}  ^List roomList
 
-     ^{ProblemFactCollectionProperty true
-       :tag 'List } lessonList
-
-     ^{PlanningScore true
-       :tag 'HardSoftScore} score]
+     ^{PlanningEntityCollectionProperty true
+       :tag 'List}  lessonList
+     ^{PlanningScore true} ^HardSoftScore score]
   ITimeTable
   (getTimeslotList [this] timeslotList)
   (getRoomList [this] roomList)
   (getLessonList [this] lessonList)
   (getScore [this] score))
 
-(defn ->TimeTable [slots rooms lessons]
+(defn ->time-table [slots rooms lessons]
   (TimeTable. slots rooms lessons nil))
-
 
 (defn ^Constraint room-conflict [^ConstraintFactory cf]
   (doto

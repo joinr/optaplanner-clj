@@ -10,9 +10,9 @@
 
 (defn ->problem []
   (let [ts (for [[l r] (partition 2 1 (range 8 16))]
-             (data/->TimeSlot  (DayOfWeek/MONDAY) (LocalTime/of l 30) (LocalTime/of r 30)))
-        rs  (mapv data/->Room ["Room A" "Room B" "Room C"])
-        ls (mapv (fn [[id course teacher grade]] (data/->Lesson id course teacher grade))
+             (data/->time-slot  (DayOfWeek/MONDAY) (LocalTime/of l 30) (LocalTime/of r 30)))
+        rs  (mapv data/->room ["Room A" "Room B" "Room C"])
+        ls (mapv (fn [[id course teacher grade]] (data/->lesson id course teacher grade))
                  [[101 "Math" "B. May" "9th grade"]
                   [102 "Physics" "M. Curie" "9th grade"]
                   [103 "Geography" "M. Polo" "9th grade"]
@@ -23,7 +23,7 @@
                   [203 "History" "I. Jones" "10th grade"]
                   [204 "English" "P. Cruz" "10th grade"]
                   [205 "French" "M. Curie" "10th grade"]])]
-     (data/->TimeTable ts rs ls)))
+     (data/->time-table ts rs ls)))
 
 (defn solve [problem]
   (let [sm (SolverManager/create
