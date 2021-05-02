@@ -80,43 +80,32 @@
 
 ;; Timetable
 (definterface ITimeTable
-  (^List getTimeslotList    [])
-  (^List getRoomList        [])
-  (^List getLessonList      [])
-  (^HardSoftScore getScore  []))
+  ( getTimeslotList    [])
+  ( getRoomList        [])
+  ( getLessonList      [])
+  ( getScore  []))
 
-
-;; (deftype ^{PlanningSolution true} TimeTable
-;;     [^{ProblemFactCollectionProperty true
-;;        ValueRangeProvider "timeslotRange"} timeslotList
-
-;;      ^{ProblemFactCollectionProperty true
-;;        ValueRangeProvider "roomRange"}  roomList
-
-;;      ^{PlanningEntityCollectionProperty true
-;;        :tag 'List}  lessonList
-;;      ^{PlanningScore true}  score]
-;;   ITimeTable
-;;   (getTimeslotList [this] timeslotList)
-;;   (getRoomList [this] roomList)
-;;   (getLessonList [this] lessonList)
-;;   (getScore [this] score))
-
+;;Problem: type tag is ignored! optaplanner complains on reflection
+;;that it's not a collection or array (lessonList)
 (deftype ^{PlanningSolution true} TimeTable
     [^{ProblemFactCollectionProperty true
-       ValueRangeProvider "timeslotRange"} timeslotList
+       ValueRangeProvider "timeslotRange"
+       :tag java.util.List} timeslotList
 
      ^{ProblemFactCollectionProperty true
-       ValueRangeProvider "roomRange"}  roomList
+       ValueRangeProvider "roomRange"
+       :tag java.util.List}  roomList
 
      ^{PlanningEntityCollectionProperty true
-       :tag 'List}  lessonList
-     ^{PlanningScore true}  score]
+       :tag 'java.util.List} lessonList
+
+     ^{PlanningScore true
+       :tag org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore}  score]
   ITimeTable
   (getTimeslotList [this] timeslotList)
-  (getRoomList [this] roomList)
-  (getLessonList [this] lessonList)
-  (getScore [this] score))
+  (getRoomList     [this] roomList)
+  (getLessonList   [this] lessonList)
+  (getScore        [this] score))
 
 (defn ->time-table [slots rooms lessons]
   (TimeTable. slots rooms lessons nil))
