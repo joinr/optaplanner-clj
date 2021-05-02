@@ -80,22 +80,38 @@
 
 ;; Timetable
 (definterface ITimeTable
-  (getTimeslotList ^List [])
-  (getRoomList ^List [])
-  (getLessonList ^List [])
-  (getScore ^HardSoftScore []))
+  (^List getTimeslotList    [])
+  (^List getRoomList        [])
+  (^List getLessonList      [])
+  (^HardSoftScore getScore  []))
 
+
+;; (deftype ^{PlanningSolution true} TimeTable
+;;     [^{ProblemFactCollectionProperty true
+;;        ValueRangeProvider "timeslotRange"} timeslotList
+
+;;      ^{ProblemFactCollectionProperty true
+;;        ValueRangeProvider "roomRange"}  roomList
+
+;;      ^{PlanningEntityCollectionProperty true
+;;        :tag 'List}  lessonList
+;;      ^{PlanningScore true}  score]
+;;   ITimeTable
+;;   (getTimeslotList [this] timeslotList)
+;;   (getRoomList [this] roomList)
+;;   (getLessonList [this] lessonList)
+;;   (getScore [this] score))
 
 (deftype ^{PlanningSolution true} TimeTable
     [^{ProblemFactCollectionProperty true
-       ValueRangeProvider "timeslotRange"}  ^List timeslotList
+       ValueRangeProvider "timeslotRange"} timeslotList
 
      ^{ProblemFactCollectionProperty true
-       ValueRangeProvider "roomRange"}  ^List roomList
+       ValueRangeProvider "roomRange"}  roomList
 
      ^{PlanningEntityCollectionProperty true
        :tag 'List}  lessonList
-     ^{PlanningScore true} ^HardSoftScore score]
+     ^{PlanningScore true}  score]
   ITimeTable
   (getTimeslotList [this] timeslotList)
   (getRoomList [this] roomList)
