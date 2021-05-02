@@ -1,4 +1,5 @@
 (ns optaplanner-clj.data
+  (:require [clojure.tools.emitter.jvm :as e]) ;;lol, lame
   (:import [org.optaplanner.core.api.score.buildin.hardsoft HardSoftScore]
            [org.optaplanner.core.api.score.stream
             Constraint ConstraintProvider ConstraintFactory
@@ -80,13 +81,14 @@
 
 ;; Timetable
 (definterface ITimeTable
-  ( getTimeslotList    [])
-  ( getRoomList        [])
-  ( getLessonList      [])
-  ( getScore  []))
+  (^java.util.List getTimeslotList    [])
+  (^java.util.List getRoomList        [])
+  (^java.util.List getLessonList      [])
+  (^java.util.List getScore  []))
 
 ;;Problem: type tag is ignored! optaplanner complains on reflection
 ;;that it's not a collection or array (lessonList)
+#_
 (deftype ^{PlanningSolution true} TimeTable
     [^{ProblemFactCollectionProperty true
        ValueRangeProvider "timeslotRange"
@@ -106,6 +108,33 @@
   (getRoomList     [this] roomList)
   (getLessonList   [this] lessonList)
   (getScore        [this] score))
+
+;;Note: when using emitter's eval, we need to supply a class-loader otherwise it'll
+;;make a new, empty one and we won't have our imports and stuff.
+;;This is possibly a very lame work around for clojure's non-constraint of types
+;;for fields:
+
+(e/eval '(deftype ^{PlanningSolution true} TimeTable
+             [^{ProblemFactCollectionProperty true
+                ValueRangeProvider "timeslotRange"
+                :tag java.util.List} timeslotList
+
+              ^{ProblemFactCollectionProperty true
+                ValueRangeProvider "roomRange"
+                :tag java.util.List}  roomList
+
+              ^{PlanningEntityCollectionProperty true
+                :tag java.util.List} lessonList
+
+              ^{PlanningScore true
+                :tag org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore}  score]
+           ITimeTable
+           (getTimeslotList [this] timeslotList)
+           (getRoomList     [this] roomList)
+           (getLessonList   [this] lessonList)
+           (getScore        [this] score))
+        {:debug? true  ;;doesn't work with lein compile...
+         :class-loader (.getContextClassLoader (Thread/currentThread))})
 
 (defn ->time-table [slots rooms lessons]
   (TimeTable. slots rooms lessons nil))
