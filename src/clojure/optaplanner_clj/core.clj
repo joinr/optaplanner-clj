@@ -52,5 +52,5 @@
 
 
 (comment
-  (solve (generateProblem))
+  (solve (->problem))
   )
