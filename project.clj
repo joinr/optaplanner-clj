@@ -6,7 +6,5 @@
   :source-paths      ["src/clojure"]
   ;:java-source-paths ["src/java"]
   :dependencies [[org.clojure/clojure "1.10.1"]
-                 [org.optaplanner/optaplanner-core "8.5.0.Final"]
-                 [org.clojure/tools.emitter.jvm "0.1.0-beta5" :exclusions [clojure/clojure]]
-                 [com.clojure-goes-fast/clj-java-decompiler "0.3.0"]]
+                 [org.optaplanner/optaplanner-core "8.5.0.Final"]]
   :repl-options {} #_{:init-ns optaplanner-clj.core})

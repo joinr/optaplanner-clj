@@ -23,20 +23,23 @@
                   [203 "History" "I. Jones" "10th grade"]
                   [204 "English" "P. Cruz" "10th grade"]
                   [205 "French" "M. Curie" "10th grade"]])]
-     (data/->time-table ts rs ls)))
+    (data/->time-table ts rs ls)))
+
+(defn ->config []
+  (.withTerminationConfig
+   (doto (SolverConfig.)
+     (.setSolutionClass TimeTable)
+     (.setEntityClassList (Collections/singletonList Lesson))
+     (.setScoreDirectorFactoryConfig
+      (doto (ScoreDirectorFactoryConfig.)
+        (.setConstraintProviderClass TimeTableConstraintProvider))))
+   (doto (TerminationConfig.)
+     (.setSecondsSpentLimit 10))))
 
 (defn solve [problem]
-  (let [sm (SolverManager/create
-             (SolverFactory/create
-               (.withTerminationConfig
-                 (doto (SolverConfig.)
-                   (.setSolutionClass TimeTable)
-                   (.setEntityClassList (Collections/singletonList Lesson))
-                   (.setScoreDirectorFactoryConfig
-                     (doto (ScoreDirectorFactoryConfig.)
-                       (.setConstraintProviderClass TimeTableConstraintProvider))))
-                 (doto (TerminationConfig.)
-                   (.setSecondsSpentLimit 10)))))
+  (let [sm         (-> (->config)
+                       SolverFactory/create
+                       SolverManager/create)
         problemId (UUID/randomUUID)
         solution (.getFinalBestSolution
                   (.solve sm problemId problem))]

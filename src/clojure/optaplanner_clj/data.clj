@@ -1,5 +1,4 @@
 (ns optaplanner-clj.data
-  (:require [clojure.tools.emitter.jvm :as e]) ;;lol, lame
   (:import [org.optaplanner.core.api.score.buildin.hardsoft HardSoftScore]
            [org.optaplanner.core.api.score.stream
             Constraint ConstraintProvider ConstraintFactory
@@ -84,10 +83,43 @@
   (^java.util.List getTimeslotList    [])
   (^java.util.List getRoomList        [])
   (^java.util.List getLessonList      [])
-  (^java.util.List getScore  []))
+  (^org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore getScore [])
+  (setTimeslotList    [^java.util.List l])
+  (setRoomList        [^java.util.List l])
+  (setLessonList      [^java.util.List l])
+  (setScore  [^org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore score]))
 
 ;;Problem: type tag is ignored! optaplanner complains on reflection
 ;;that it's not a collection or array (lessonList)
+
+;;What if we annotate methods instead of fields?
+
+(deftype ^{PlanningSolution true} TimeTable
+    [^{:unsynchronized-mutable true} timeslotList
+     ^{:unsynchronized-mutable true} roomList
+     ^{:unsynchronized-mutable true} lessonList
+     ^{:unsynchronized-mutable true} score]
+  ITimeTable
+  (^{ProblemFactCollectionProperty true
+     ValueRangeProvider {id "timeslotRange"}
+     :tag java.util.List}
+   getTimeslotList [this] timeslotList)
+  (^{ProblemFactCollectionProperty true
+      ValueRangeProvider {id "roomRange"}
+     :tag java.util.List}
+   getRoomList     [this] roomList)
+  (^{PlanningEntityCollectionProperty true
+     :tag 'java.util.List}
+   getLessonList   [this] lessonList)
+  (^{PlanningScore true
+     :tag org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore}
+   getScore        [this] score)
+  (setTimeslotList    [this ^java.util.List l] (do (set! timeslotList l) this))
+  (setRoomList        [this ^java.util.List l] (do (set! roomList l) this))
+  (setLessonList      [this ^java.util.List l] (do (set! lessonList l) this))
+  (setScore           [this ^org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore s]
+    (do (set! score s) this)))
+
 #_
 (deftype ^{PlanningSolution true} TimeTable
     [^{ProblemFactCollectionProperty true
@@ -108,33 +140,6 @@
   (getRoomList     [this] roomList)
   (getLessonList   [this] lessonList)
   (getScore        [this] score))
-
-;;Note: when using emitter's eval, we need to supply a class-loader otherwise it'll
-;;make a new, empty one and we won't have our imports and stuff.
-;;This is possibly a very lame work around for clojure's non-constraint of types
-;;for fields:
-
-(e/eval '(deftype ^{PlanningSolution true} TimeTable
-             [^{ProblemFactCollectionProperty true
-                ValueRangeProvider "timeslotRange"
-                :tag java.util.List} timeslotList
-
-              ^{ProblemFactCollectionProperty true
-                ValueRangeProvider "roomRange"
-                :tag java.util.List}  roomList
-
-              ^{PlanningEntityCollectionProperty true
-                :tag java.util.List} lessonList
-
-              ^{PlanningScore true
-                :tag org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore}  score]
-           ITimeTable
-           (getTimeslotList [this] timeslotList)
-           (getRoomList     [this] roomList)
-           (getLessonList   [this] lessonList)
-           (getScore        [this] score))
-        {:debug? true  ;;doesn't work with lein compile...
-         :class-loader (.getContextClassLoader (Thread/currentThread))})
 
 (defn ->time-table [slots rooms lessons]
   (TimeTable. slots rooms lessons nil))
