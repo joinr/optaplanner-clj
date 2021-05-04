@@ -80,13 +80,13 @@
 
 ;; Timetable
 (definterface ITimeTable
-  (^java.util.List getTimeslotList    [])
-  (^java.util.List getRoomList        [])
-  (^java.util.List getLessonList      [])
+  (^"[Loptaplanner_clj.data.TimeSlot;" getTimeslotList    [])
+  (^"[Loptaplanner_clj.data.Room;" getRoomList        [])
+  (^"[Loptaplanner_clj.data.Lesson;" getLessonList      [])
   (^org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore getScore [])
-  (setTimeslotList    [^java.util.List l])
-  (setRoomList        [^java.util.List l])
-  (setLessonList      [^java.util.List l])
+  (setTimeslotList    [^"[Loptaplanner_clj.data.TimeSlot;" l])
+  (setRoomList        [^"[Loptaplanner_clj.data.Room;" l])
+  (setLessonList      [^"[Loptaplanner_clj.data.Lesson;" l])
   (setScore  [^org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore score]))
 
 ;;Problem: type tag is ignored! optaplanner complains on reflection
@@ -102,21 +102,21 @@
   ITimeTable
   (^{ProblemFactCollectionProperty true
      ValueRangeProvider {id "timeslotRange"}
-     :tag java.util.List}
+     :tag "[Loptaplanner_clj.data.TimeSlot;"}
    getTimeslotList [this] timeslotList)
   (^{ProblemFactCollectionProperty true
       ValueRangeProvider {id "roomRange"}
-     :tag java.util.List}
+     :tag "[Loptaplanner_clj.data.Room;"}
    getRoomList     [this] roomList)
   (^{PlanningEntityCollectionProperty true
-     :tag 'java.util.List}
+     :tag "[Loptaplanner_clj.data.Lesson;"}
    getLessonList   [this] lessonList)
   (^{PlanningScore true
      :tag org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore}
    getScore        [this] score)
-  (setTimeslotList    [this ^java.util.List l] (do (set! timeslotList l) this))
-  (setRoomList        [this ^java.util.List l] (do (set! roomList l) this))
-  (setLessonList      [this ^java.util.List l] (do (set! lessonList l) this))
+  (setTimeslotList    [this ^"[Loptaplanner_clj.data.TimeSlot;" l] (do (set! timeslotList l) this))
+  (setRoomList        [this ^"[Loptaplanner_clj.data.Room;" l] (do (set! roomList l) this))
+  (setLessonList      [this ^"[Loptaplanner_clj.data.Lesson;" l] (do (set! lessonList l) this))
   (setScore           [this ^org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore s]
     (do (set! score s) this)))
 
