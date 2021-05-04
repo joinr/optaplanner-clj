@@ -98,11 +98,6 @@ typing than we are probably comfortable with:
   (setLessonList      [^"[Loptaplanner_clj.data.Lesson;" l])
   (setScore  [^org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore score]))
 
-;;Problem: type tag is ignored! optaplanner complains on reflection
-;;that it's not a collection or array (lessonList)
-
-;;What if we annotate methods instead of fields?
-
 (deftype ^{PlanningSolution {solutionCloner +clone-class+}}
     TimeTable
     [^{:unsynchronized-mutable true} timeslotList
