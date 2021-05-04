@@ -36,10 +36,13 @@
    (doto (TerminationConfig.)
      (.setSecondsSpentLimit 10))))
 
+(defn ^SolverManager ->solver-manager []
+  (-> (->config)
+      SolverFactory/create
+      SolverManager/create))
+
 (defn solve [problem]
-  (let [sm         (-> (->config)
-                       SolverFactory/create
-                       SolverManager/create)
+  (let [sm        (->solver-manager)
         problemId (UUID/randomUUID)
         ^TimeTable
         solution (.getFinalBestSolution

@@ -1,4 +1,5 @@
 (ns optaplanner-clj.data
+  (:require [optaplanner-clj.util :refer [method-ref]])
   (:import [org.optaplanner.core.api.score.buildin.hardsoft HardSoftScore]
            [org.optaplanner.core.api.score.stream
             Constraint ConstraintProvider ConstraintFactory
@@ -35,26 +36,26 @@
 (defn ->room [x] (Room. (str x)))
 
 (definterface ILesson
-  (getId [])
-  (getSubject [])
-  (getTeacher [])
-  (getStudentGroup [])
-  (getTimeslot [])
-  (setTimeslot [timeslot])
-  (getRoom [])
-  (setRoom [room]))
+  (^long getId [])
+  (^String getSubject [])
+  (^String getTeacher [])
+  (^String getStudentGroup [])
+  (^optaplanner_clj.data.TimeSlot getTimeslot [])
+  (setTimeslot [^optaplanner_clj.data.TimeSlot timeslot])
+  (^optaplanner_clj.data.Room getRoom [])
+  (setRoom [^optaplanner_clj.data.Room room]))
 
 (deftype ^{PlanningEntity true} Lesson
-    [^{PlanningId true :tag 'Long}
+    [^{PlanningId true :tag long}
      id
      ^String subject
      ^String teacher
      ^String studentGroup
      ^{PlanningVariable {valueRangeProviderRefs ["timeslotRange"]}
-       :tag 'TimeSlot :unsynchronized-mutable true}
+       :tag 'optaplanner_clj.data.TimeSlot :unsynchronized-mutable true}
      timeslot
      ^{PlanningVariable {valueRangeProviderRefs ["roomRange"]}
-       :tag 'Room :unsynchronized-mutable true}
+       :tag 'optaplanner_clj.data.Room :unsynchronized-mutable true}
      room]
   ILesson
   (getId [this] id)
@@ -147,9 +148,9 @@
 (defn ^Constraint room-conflict [^ConstraintFactory cf]
   (-> (.from cf Lesson)
       (.join Lesson
-             (Joiners/equal    (memfn ^Lesson getTimeslot))
-             (Joiners/equal    (memfn ^Lesson getRoom))
-             (Joiners/lessThan (memfn ^Lesson getId))
+             (Joiners/equal    (method-ref ^Lesson getTimeslot))
+             (Joiners/equal    (method-ref ^Lesson getRoom))
+             (Joiners/lessThan (method-ref ^Lesson getId))
              )
       (.penalize "Room conflict" HardSoftScore/ONE_HARD)))
 
@@ -157,15 +158,15 @@
 (defn ^Constraint teacher-conflict [^ConstraintFactory cf]
   (-> cf
     (.fromUniquePair Lesson
-                     (Joiners/equal (memfn ^Lesson getTimeslot))
-                     (Joiners/equal (memfn ^Lesson getTeacher)))
+                     (Joiners/equal (method-ref ^Lesson getTimeslot))
+                     (Joiners/equal (method-ref ^Lesson getTeacher)))
     (.penalize "Teacher conflict" HardSoftScore/ONE_HARD)))
 
 (defn ^Constraint student-group-conflict [^ConstraintFactory cf]
   (-> cf
     (.fromUniquePair Lesson
-                     (Joiners/equal (memfn ^Lesson getTimeslot))
-                     (Joiners/equal (memfn ^Lesson getStudentGroup)))
+                     (Joiners/equal (method-ref ^Lesson getTimeslot))
+                     (Joiners/equal (method-ref ^Lesson getStudentGroup)))
     (.penalize "Student group conflict" HardSoftScore/ONE_HARD)))
 
 ;;optaplanner wants a damn class...
@@ -173,10 +174,9 @@
   ConstraintProvider
   (^"[Lorg.optaplanner.core.api.score.stream.Constraint;" defineConstraints
    [this ^ConstraintFactory cf]
-   (make-array Constraint
-               [(room-conflict cf)
-                (teacher-conflict cf)
-                (student-group-conflict cf)])))
+   (object-array [(room-conflict cf)
+                  (teacher-conflict cf)
+                  (student-group-conflict cf)])))
 
 #_
 (defn ^ConstraintProvider ->make-provider []
