@@ -1,0 +1,118 @@
+* optaplanner-clj
+
+Fork from Zachary Teo's original implementation of a mixed clojure/java project that implements the
+example from  [Optaplanner example](https://quarkus.io/version/1.7/guides/optaplanner#the-value-range-providers).
+
+This fork is a pure-clojure implementation and an exercise in obscure interop trying to 
+get Clojure to satisfy optaplanner's HEAVILY class-based, annotation-based, reflection based
+demands.
+
+**  Usage
+Typically we would start a repl from our favorite IDE, or the shell via `lein repl`.
+Once "in", you will be placed in the core namespace optaplanner-clj.core at the repl.
+#+BEGIN_SRC clojure
+optaplanner-clj.core> (solve)
+[[[101 "Math" "B. May" "9th grade" "MONDAY 10:30" "Room C"]
+  [102 "Physics" "M. Curie" "9th grade" "MONDAY 11:30" "Room B"]
+  [103 "Geography" "M. Polo" "9th grade" "MONDAY 09:30" "Room C"]
+  [104 "English" "I. Jones" "9th grade" "MONDAY 14:30" "Room A"]
+  [105 "Spanish" "P. Cruz" "9th grade" "MONDAY 12:30" "Room A"]
+  [201 "Math" "B. May" "10th grade" "MONDAY 11:30" "Room A"]
+  [202 "Chemistry" "M. Curie" "10th grade" "MONDAY 08:30" "Room B"]
+  [203 "History" "I. Jones" "10th grade" "MONDAY 10:30" "Room B"]
+  [204 "English" "P. Cruz" "10th grade" "MONDAY 14:30" "Room B"]
+  [205 "French" "M. Curie" "10th grade" "MONDAY 12:30" "Room C"]]
+ #object[org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore 0x44efb718 "0hard/0soft"]]
+#+END_SRC
+
+** Tribulations
+Yeah....to get this working, we had to do a bunch of stuff to satisfy
+optaplanner's exepectations and clojure's limitations.
+
+Optaplanner aims to delegate most of the intracies of solution 
+representation and move generation toward the object definition.
+It then tries to automate the solution/scoring process by reflecting 
+over classes you define and looking for special annotations that 
+encode special properties the solver engine is looking for.
+
+At a first glance, this is fine...we can encode annotations and 
+interop fairly well from Clojure.  No problem, right?
+
+
+*** annotations work great, but deftype doesn't fully meet optaplanner's expectations
+
+deftype doesn't preserve non-primitive field types. so we had to define
+interfaces with getter/setters and annotate those methods instead of just
+letting the fields do the work.  
+
+- As an aside, clojure.tools.emitter.jvm deftype preserves field types (instead of
+  unifying to Object for non-primitives), but doesn't process annotations.
+
+*** optaplanner expects typed collections or typed arrays for its entity collection annotations.
+-   clojure doesn't preserve types at runtime (odd that optaplanner can tell via reflection).
+
+After annotating the methods on the deftype, we still ended up with validation problems from
+optaplanner since it expected "entity collections" to be either java.util.Collection or arrays.
+Specifically, parameterized (aka generic) or typed collections.  Clojure is only currently capable
+of returning untyped collections in its bytecode (I lack the sophistication to know if this can be
+addressed), so even with a return type of java.util.List, optaplanner will complain.
+
+-   so we switched from arraylists to typed arrays
+
+This satisifed optaplanner at the cost of having to shuffle around typed arrays and 
+not being able to use ArrayLists.  For the toy example, it's not a big deal, but the
+added burden of typing everything will likely wear thin without some nice macros and 
+helpers.
+
+*** clojurecore/memfn doesn't emit java.util.function compatible implementations.
+- optaplanner uses the java stream API with java.util.function interfaces (and
+  its own additions) to provide a fluent interface for composing Constraint
+  objects.
+
+It's idiomatic per the docs to pass along member functions via the :: java
+syntax. We can approximate this with clojure using `memfn`. However, optaplanner
+"actually" wants java.util.function.Function like instances, and
+clojure.lang.IFn does not meet that requirement.
+
+so I wrote the `optaplanner-clj.util/method-ref` macro to extend memfn to do that.
+
+*** interface types and implementations seem to have to be fully qualified too 
+
+This is a really odd detail I never realized. If you have an imported aliased
+class like java.util.List as List, and you use ^List in your hints on
+definterface, Clojure tries to resolve the aliased stuff in java.lang.List
+instead of java.util.List.  The arduous solution here is to fully-qualify everything; 
+macros would probably help substantially.
+
+** General Impedance Mismatches
+
+The designers of optaplanner, inherited from planner, inheritd from Droolz I think, 
+are building on a "heavily" java framework-like design.  There's ha hard focus on 
+classes and inheritance, although some decent interface usage to facilitate 
+composition.  Lots of factories.  Endless factory classes :)
+
+I begs the question whether a clojure implementation could substantially simplify
+both the API and solution engine without suffering through the impedance 
+mismatch.  Experience shows this is possible.  However, the trade off would
+be losing out on the existing library of solution, scoring, heuristics, and similar
+functionality embedded in optaplanner's bulk.  Maybe there is a middle ground, 
+or a nice wrapper layer that can generate all the boilerplate for us.
+
+** License
+
+Original source: 
+
+Copyright © 2021 zackteo
+
+Joinr fork retains the same license.
+
+This program and the accompanying materials are made available under the
+terms of the Eclipse Public License 2.0 which is available at
+http://www.eclipse.org/legal/epl-2.0.
+
+This Source Code may also be made available under the following Secondary
+Licenses when the conditions for such availability set forth in the Eclipse
+Public License, v. 2.0 are satisfied: GNU General Public License as published by
+the Free Software Foundation, either version 2 of the License, or (at your
+option) any later version, with the GNU Classpath Exception which is available
+at https://www.gnu.org/software/classpath/license.html.

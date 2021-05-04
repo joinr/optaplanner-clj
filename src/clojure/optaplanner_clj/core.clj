@@ -41,23 +41,23 @@
       SolverFactory/create
       SolverManager/create))
 
-(defn solve [problem]
-  (let [sm        (->solver-manager)
-        problemId (UUID/randomUUID)
-        ^TimeTable
-        solution (.getFinalBestSolution
-                  (.solve sm problemId problem))]
-
-    (list (map (fn [^Lesson l]
-                 [(.getId l)
-                  ;; (.getSubject %)
-                  ;; (.getTeacher %)
-                  ;; (.getStudentGroup %)
-                  (str  (.getTimeslot l))
-                  (str  (.getRoom l))])
-               (.getLessonList solution))
-          (.getScore solution))))
-
+(defn solve
+  ([problem]
+   (let [sm        (->solver-manager)
+         problemId (UUID/randomUUID)
+         ^TimeTable
+         solution (.getFinalBestSolution
+                   (.solve sm problemId problem))]
+     [(mapv (fn [^Lesson l]
+              [(.getId l)
+               (.getSubject l)
+               (.getTeacher l)
+               (.getStudentGroup l)
+               (str  (.getTimeslot l))
+               (str  (.getRoom l))])
+            (.getLessonList solution))
+      (.getScore solution)]))
+  ([] (solve (->problem))))
 
 (comment
   (solve (->problem))

@@ -7,4 +7,4 @@
   ;:java-source-paths ["src/java"]
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [org.optaplanner/optaplanner-core "8.5.0.Final"]]
-  :repl-options {} #_{:init-ns optaplanner-clj.core})
+  :repl-options {:init-ns optaplanner-clj.core})
