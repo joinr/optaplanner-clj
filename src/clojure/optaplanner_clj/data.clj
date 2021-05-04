@@ -143,7 +143,9 @@
   (getScore        [this] score))
 
 (defn ->time-table [slots rooms lessons]
-  (TimeTable. slots rooms lessons nil))
+  (TimeTable. (into-array TimeSlot slots)
+              (into-array Room rooms)
+              (into-array Lesson lessons) nil))
 
 (defn ^Constraint room-conflict [^ConstraintFactory cf]
   (-> (.from cf Lesson)
@@ -174,9 +176,9 @@
   ConstraintProvider
   (^"[Lorg.optaplanner.core.api.score.stream.Constraint;" defineConstraints
    [this ^ConstraintFactory cf]
-   (object-array [(room-conflict cf)
-                  (teacher-conflict cf)
-                  (student-group-conflict cf)])))
+   (into-array Constraint   [(room-conflict cf)
+                             (teacher-conflict cf)
+                             (student-group-conflict cf)])))
 
 #_
 (defn ^ConstraintProvider ->make-provider []
