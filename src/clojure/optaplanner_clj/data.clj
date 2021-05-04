@@ -145,27 +145,26 @@
   (TimeTable. slots rooms lessons nil))
 
 (defn ^Constraint room-conflict [^ConstraintFactory cf]
-  (doto
-    (.from cf Lesson)
-    (.join Lesson
-           (Joiners/equal    (memfn ^Lesson getTimeSlot))
-           (Joiners/equal    (memfn ^Lesson getRoom))
-           (.lessThan Joiners (memfn ^Lesson getId))
-           )
-    (.penalize "Room conflict" HardSoftScore/ONE_HARD)))
+  (-> (.from cf Lesson)
+      (.join Lesson
+             (Joiners/equal    (memfn ^Lesson getTimeslot))
+             (Joiners/equal    (memfn ^Lesson getRoom))
+             (Joiners/lessThan (memfn ^Lesson getId))
+             )
+      (.penalize "Room conflict" HardSoftScore/ONE_HARD)))
 
 
 (defn ^Constraint teacher-conflict [^ConstraintFactory cf]
-  (doto cf
+  (-> cf
     (.fromUniquePair Lesson
-                     (Joiners/equal (memfn ^Lesson getTimeSlot))
+                     (Joiners/equal (memfn ^Lesson getTimeslot))
                      (Joiners/equal (memfn ^Lesson getTeacher)))
     (.penalize "Teacher conflict" HardSoftScore/ONE_HARD)))
 
 (defn ^Constraint student-group-conflict [^ConstraintFactory cf]
-  (doto cf
+  (-> cf
     (.fromUniquePair Lesson
-                     (Joiners/equal (memfn ^Lesson getTimeSlot))
+                     (Joiners/equal (memfn ^Lesson getTimeslot))
                      (Joiners/equal (memfn ^Lesson getStudentGroup)))
     (.penalize "Student group conflict" HardSoftScore/ONE_HARD)))
 

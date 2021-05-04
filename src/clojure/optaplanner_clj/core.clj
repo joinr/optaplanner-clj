@@ -41,15 +41,17 @@
                        SolverFactory/create
                        SolverManager/create)
         problemId (UUID/randomUUID)
+        ^TimeTable
         solution (.getFinalBestSolution
                   (.solve sm problemId problem))]
 
-    (list (map #(vector (.getId %)
-                        ;; (.getSubject %)
-                        ;; (.getTeacher %)
-                        ;; (.getStudentGroup %)
-                        (.toString (.getTimeslot %))
-                        (.toString (.getRoom %)))
+    (list (map (fn [^Lesson l]
+                 [(.getId l)
+                  ;; (.getSubject %)
+                  ;; (.getTeacher %)
+                  ;; (.getStudentGroup %)
+                  (str  (.getTimeslot l))
+                  (str  (.getRoom l))])
                (.getLessonList solution))
           (.getScore solution))))
 
