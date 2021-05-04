@@ -4,6 +4,7 @@
            [org.optaplanner.core.api.score.stream
             Constraint ConstraintProvider ConstraintFactory
             Joiners]
+           [org.optaplanner.core.api.domain.solution.cloner SolutionCloner]
            [org.optaplanner.core.api.domain.solution PlanningSolution]
            [org.optaplanner.core.api.domain.variable PlanningVariable]
            [org.optaplanner.core.api.domain.entity PlanningEntity]
@@ -16,6 +17,15 @@
            [java.time DayOfWeek LocalTime]
            [java.util List]))
 
+(defprotocol ISolution
+  (clone-solution [this]))
+
+(def cloner
+  (reify SolutionCloner
+    (cloneSolution [this original]
+      (clone-solution original))))
+
+(def +clone-class+ (type cloner))
 (definterface INamed
   (^String getName []))
 
@@ -95,11 +105,18 @@
 
 ;;What if we annotate methods instead of fields?
 
-(deftype ^{PlanningSolution true} TimeTable
+(deftype ^{PlanningSolution {solutionCloner +clone-class+}}
+    TimeTable
     [^{:unsynchronized-mutable true} timeslotList
      ^{:unsynchronized-mutable true} roomList
      ^{:unsynchronized-mutable true} lessonList
      ^{:unsynchronized-mutable true} score]
+  ISolution
+  (clone-solution [this]
+    (TimeTable. (aclone ^"[Loptaplanner_clj.data.TimeSlot;" timeslotList)
+                (aclone ^"[Loptaplanner_clj.data.Room;" roomList)
+                (aclone ^"[Loptaplanner_clj.data.Lesson;" lessonList)
+                score))
   ITimeTable
   (^{ProblemFactCollectionProperty true
      ValueRangeProvider {id "timeslotRange"}
