@@ -38,6 +38,109 @@ encode special properties the solver engine is looking for.
 At a first glance, this is fine...we can encode annotations and 
 interop fairly well from Clojure.  No problem, right?
 
+The end result is that something like this java class:
+#+BEGIN_SRC java
+@PlanningSolution
+public class TimeTable {
+
+    @ProblemFactCollectionProperty
+    @ValueRangeProvider(id = "timeslotRange")
+    private List<Timeslot> timeslotList;
+    @ProblemFactCollectionProperty
+    @ValueRangeProvider(id = "roomRange")
+    private List<Room> roomList;
+    @PlanningEntityCollectionProperty
+    private List<Lesson> lessonList;
+
+    @PlanningScore
+    private HardSoftScore score;
+
+    public TimeTable() {
+    }
+
+    public TimeTable(List<Timeslot> timeslotList, List<Room> roomList, List<Lesson> lessonList) {
+        this.timeslotList = timeslotList;
+        this.roomList = roomList;
+        this.lessonList = lessonList;
+    }
+
+    public List<Timeslot> getTimeslotList() {
+        return timeslotList;
+    }
+
+    public List<Room> getRoomList() {
+        return roomList;
+    }
+
+    public List<Lesson> getLessonList() {
+        return lessonList;
+    }
+
+    public HardSoftScore getScore() {
+        return score;
+    }
+
+}
+#+END_SRC
+
+Turns into a 1-off interface and a clojure deftype with a lot of annotations and 
+typing than we are probably comfortable with: 
+
+#+BEGIN_SRC clojure
+;; Timetable
+(definterface ITimeTable
+  (^"[Loptaplanner_clj.data.TimeSlot;" getTimeslotList    [])
+  (^"[Loptaplanner_clj.data.Room;" getRoomList        [])
+  (^"[Loptaplanner_clj.data.Lesson;" getLessonList      [])
+  (^org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore getScore [])
+  (setTimeslotList    [^"[Loptaplanner_clj.data.TimeSlot;" l])
+  (setRoomList        [^"[Loptaplanner_clj.data.Room;" l])
+  (setLessonList      [^"[Loptaplanner_clj.data.Lesson;" l])
+  (setScore  [^org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore score]))
+
+;;Problem: type tag is ignored! optaplanner complains on reflection
+;;that it's not a collection or array (lessonList)
+
+;;What if we annotate methods instead of fields?
+
+(deftype ^{PlanningSolution {solutionCloner +clone-class+}}
+    TimeTable
+    [^{:unsynchronized-mutable true} timeslotList
+     ^{:unsynchronized-mutable true} roomList
+     ^{:unsynchronized-mutable true} lessonList
+     ^{:unsynchronized-mutable true} score]
+  ISolution
+  (clone-solution [this]
+    (TimeTable. (aclone ^"[Loptaplanner_clj.data.TimeSlot;" timeslotList)
+                (aclone ^"[Loptaplanner_clj.data.Room;" roomList)
+                (aclone ^"[Loptaplanner_clj.data.Lesson;" lessonList)
+                score))
+  ITimeTable
+  (^{ProblemFactCollectionProperty true
+     ValueRangeProvider {id "timeslotRange"}
+     :tag "[Loptaplanner_clj.data.TimeSlot;"}
+   getTimeslotList [this] timeslotList)
+  (^{ProblemFactCollectionProperty true
+      ValueRangeProvider {id "roomRange"}
+     :tag "[Loptaplanner_clj.data.Room;"}
+   getRoomList     [this] roomList)
+  (^{PlanningEntityCollectionProperty true
+     :tag "[Loptaplanner_clj.data.Lesson;"}
+   getLessonList   [this] lessonList)
+  (^{PlanningScore true
+     :tag org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore}
+   getScore        [this] score)
+  (setTimeslotList    [this ^"[Loptaplanner_clj.data.TimeSlot;" l] (do (set! timeslotList l) this))
+  (setRoomList        [this ^"[Loptaplanner_clj.data.Room;" l] (do (set! roomList l) this))
+  (setLessonList      [this ^"[Loptaplanner_clj.data.Lesson;" l] (do (set! lessonList l) this))
+  (setScore           [this ^org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore s]
+    (do (set! score s) this)))
+#+END_SRC
+
+This is - in a sense - a very "raw" interpretation where we aren't using much sophistication
+from the Clojure side.  A lot of the gnarly stuff can be hidden behind some decent macrology, 
+but as you will see, there are some underlying misplaced expectations that hobble us a bit
+when trying to integrate optaplanner with Clojure.
 
 *** annotations work great, but deftype doesn't fully meet optaplanner's expectations
 
@@ -63,6 +166,46 @@ This satisifed optaplanner at the cost of having to shuffle around typed arrays 
 not being able to use ArrayLists.  For the toy example, it's not a big deal, but the
 added burden of typing everything will likely wear thin without some nice macros and 
 helpers.
+
+*** optaplanner expects either 0-arg constructor or an annotated SolutionCloner class
+To ease solution definition, optaplanner uses a default cloning strategy based on reflection
+and aforementioned annotations to scrape the minimal amount of planning data from a solution
+during cloning.  This is unfortunate, because clojure's deftype only provides 1 constructor with
+the fields defined by deftype.  We could use genclass, but we're back to lame AOT compilation at
+that point...
+
+Thankfully, optaplanner allows you to define custom cloning in a round-about fashion via annotations.
+The fix here is to define a simple protocol, ISolution, with a single function - clone-solution - 
+and allow our types to implement that. Then point the solutionCloner annotation at a static
+class that just delegates the cloning work to this protocol.
+
+We can reify a singleton class that bridges this for us: 
+
+#+BEGIN_SRC clojure
+(defprotocol ISolution
+  (clone-solution [this]))
+
+(def cloner
+  (reify SolutionCloner
+    (cloneSolution [this original]
+      (clone-solution original))))
+
+(def +clone-class+ (type cloner))
+#+END_SRC 
+
+and then use it as an annotation to plumb our cloning from within the deftype:
+
+#+BEGIN_SRC clojure
+(deftype ^{PlanningSolution {solutionCloner +clone-class+}}
+ TimeTable
+ ;;elided
+  ISolution
+  (clone-solution [this]
+    (TimeTable. (aclone ^"[Loptaplanner_clj.data.TimeSlot;" timeslotList)
+                (aclone ^"[Loptaplanner_clj.data.Room;" roomList)
+                (aclone ^"[Loptaplanner_clj.data.Lesson;" lessonList)
+                score))
+#+END_SRC
 
 *** clojurecore/memfn doesn't emit java.util.function compatible implementations.
 - optaplanner uses the java stream API with java.util.function interfaces (and
